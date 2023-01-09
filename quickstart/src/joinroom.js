@@ -2,6 +2,7 @@
 
 const { connect, createLocalVideoTrack, Logger } = require('twilio-video');
 const { isMobile } = require('./browser');
+const localvideosnapshot = require('./localvideosnapshot');
 const screenshare = require('./screenshare');
 
 const $leave = $('#leave-room');
@@ -266,7 +267,9 @@ async function joinRoom(token, connectOptions) {
     }
   });
 
+  // Newly added functions from examples
   screenShare();
+  localVideoSnapshot();
 
   // Leave the Room when the "Leave Room" button is clicked.
   $leave.click(function onLeave() {
@@ -399,6 +402,50 @@ async function screenShare() {
 function toggleButtons() {
   captureScreen.style.display = captureScreen.style.display === 'none' ? '' : 'none';
   stopScreenCapture.style.display = stopScreenCapture.style.display === 'none' ? '' : 'none';
+}
+
+/**
+ * Snapshot
+ */
+var displayLocalVideo = localvideosnapshot.displayLocalVideo;
+var takeLocalVideoSnapshot = localvideosnapshot.takeLocalVideoSnapshot;
+var canvas = document.querySelector('.snapshot-canvas');
+var img = document.querySelector('.snapshot-img');
+var takeSnapshot = document.querySelector('button#takesnapshot');
+
+let videoTrack;
+let el;
+
+// Show image or canvas
+window.onload = function() {
+  el = window.ImageCapture ? img : canvas;
+  el.classList.remove('hidden');
+  if(videoTrack) {
+    setSnapshotSizeToVideo(el, videoTrack);
+  }
+}
+
+function localVideoSnapshot() {  
+  // Set the canvas size to the video size.
+  function setSnapshotSizeToVideo(snapshot, video) {
+    snapshot.width = video.dimensions.width;
+    snapshot.height = video.dimensions.height;
+  }
+  
+  // Request the default LocalVideoTrack and display it.
+  displayLocalVideo($activeVideo).then(function(localVideoTrack) {
+    // Display a snapshot of the LocalVideoTrack on the canvas.
+    videoTrack = localVideoTrack;
+    takeSnapshot.onclick = function() {
+      setSnapshotSizeToVideo(el, localVideoTrack);
+      takeLocalVideoSnapshot($activeVideo, localVideoTrack, el);
+    };
+  });
+
+  // Resize the canvas to the video size whenever window is resized.
+  window.onresize = function() {
+    setSnapshotSizeToVideo(el, videoTrack);
+  };
 }
 
 module.exports = joinRoom;
