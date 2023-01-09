@@ -2,6 +2,7 @@
 
 const { connect, createLocalVideoTrack, Logger } = require('twilio-video');
 const { isMobile } = require('./browser');
+const screenshare = require('./screenshare');
 
 const $leave = $('#leave-room');
 const $room = $('#room');
@@ -231,6 +232,7 @@ async function joinRoom(token, connectOptions) {
 
   // Save the LocalVideoTrack.
   let localVideoTrack = Array.from(room.localParticipant.videoTracks.values())[0].track;
+  window.localVideoTrack = localVideoTrack;
 
   // Make the Room available in the JavaScript console for debugging.
   window.room = room;
@@ -263,6 +265,8 @@ async function joinRoom(token, connectOptions) {
       setCurrentActiveParticipant(room);
     }
   });
+
+  screenShare();
 
   // Leave the Room when the "Leave Room" button is clicked.
   $leave.click(function onLeave() {
@@ -336,6 +340,65 @@ async function joinRoom(token, connectOptions) {
       }
     });
   });
+}
+
+
+/**
+ * Screen Share
+ */
+const createScreenTrack = screenshare.createScreenTrack;
+const captureScreen = document.querySelector('button#capturescreen');
+const stopScreenCapture = document.querySelector('button#stopscreencapture');
+
+async function screenShare() {
+  const logger = Logger.getLogger('twilio-video');
+  logger.setLevel('silent');
+
+  // Hide the "Stop Capture Screen" button.
+  stopScreenCapture.style.display = 'none';
+
+  // The LocalVideoTrack for your screen.
+  let screenTrack;
+
+  captureScreen.onclick = async function() {
+    try {
+      // Create and preview your local screen.
+      screenTrack = await createScreenTrack(720, 1280);
+      //screenTrack.attach($activeVideo);
+
+      // Publish screen track to room
+      await room.localParticipant.publishTrack(screenTrack)
+        .then(trackPublication => {
+          localVideoTrack.stop();
+          room.localParticipant.unpublishTrack(localVideoTrack);
+      })
+
+      // When screen sharing is stopped, unpublish the screen track.
+      screenTrack.on('stopped', async () => {
+        if (room) {
+          room.localParticipant.unpublishTrack(screenTrack);
+          localVideoTrack = await createLocalVideoTrack();
+          await room.localParticipant.publishTrack(localVideoTrack);
+        }
+        toggleButtons();
+      });
+
+      // Show the "Stop Capture Screen" button.
+      toggleButtons();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  // Stop capturing your screen.
+  const stopScreenSharing = () => screenTrack.stop();
+
+  stopScreenCapture.onclick = stopScreenSharing;
+}
+
+function toggleButtons() {
+  captureScreen.style.display = captureScreen.style.display === 'none' ? '' : 'none';
+  stopScreenCapture.style.display = stopScreenCapture.style.display === 'none' ? '' : 'none';
 }
 
 module.exports = joinRoom;
