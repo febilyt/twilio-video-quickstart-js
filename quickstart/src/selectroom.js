@@ -14,6 +14,8 @@ function selectRoom($modal, error) {
   const $identity = $('#screen-name', $modal);
   const $join = $('button.btn-primary', $modal);
   const $roomName = $('#room-name', $modal);
+  const $audioCodec = $('select#preferredaudiocodec', $modal);
+  const $videoCodec = $('select#preferredvideocodec', $modal);
 
   // If Room name is provided as a URL parameter, pre-populate the Room name field.
   const { roomName } = getUrlParams();
@@ -65,7 +67,9 @@ function selectRoom($modal, error) {
       $modal.off('hidden.bs.modal', onHide);
       const identity = $identity.val();
       const roomName = $roomName.val();
-      resolve({ identity, roomName });
+      const audioCodec = $audioCodec.val();
+      const videoCodec = $videoCodec.val();
+      resolve({ identity, roomName, audioCodec, videoCodec });
     });
 
     $modal.modal({

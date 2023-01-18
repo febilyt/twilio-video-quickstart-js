@@ -78,7 +78,7 @@ async function selectAndJoinRoom(error = null) {
     deviceIds.video = null;
     return selectMicrophone();
   }
-  const { identity, roomName } = formData;
+  const { identity, roomName, audioCodec, videoCodec } = formData;
 
   try {
     // Fetch an AccessToken to join the Room.
@@ -95,6 +95,14 @@ async function selectAndJoinRoom(error = null) {
 
     // Add the specified video device ID to ConnectOptions.
     connectOptions.video.deviceId = { exact: deviceIds.video };
+
+    // User selected preferred codec
+    if (audioCodec) {
+      connectOptions.preferredAudioCodecs = [audioCodec];
+    }
+    if (videoCodec) {
+        connectOptions.preferredVideoCodecs = [videoCodec];
+    }
 
     // Join the Room.
     await joinRoom(token, connectOptions);
